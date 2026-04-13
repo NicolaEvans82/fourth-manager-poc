@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fourth Manager Intelligence — POC</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #002747;
+    --deep-blue: #0C4A7D;
+    --teal: #00B69F;
+    --teal-bg: rgba(0,182,159,0.08);
+    --teal-border: rgba(0,182,159,0.3);
+    --orange: #FAA51A;
+    --orange-bg: rgba(250,165,26,0.1);
+    --red: #D81632;
+    --red-bg: rgba(216,22,50,0.08);
+    --green-bg: rgba(0,182,159,0.1);
+    --page-bg: #F5F5F5;
+    --card-bg: #FFFFFF;
+    --text-primary: #1a1a2e;
+    --text-secondary: #6b7280;
+    --border: #e5e7eb;
+    --font: 'Roboto', sans-serif;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-hover: 0 4px 12px rgba(0,0,0,0.12);
+    --transition: 150ms ease;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--page-bg); color: var(--text-primary); min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* TOP BAR */
+  .topbar { background: var(--navy); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { width: 28px; height: 28px; background: var(--teal); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: var(--navy); letter-spacing: -0.02em; }
+  .topbar-title { color: #fff; font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .topbar-subtitle { color: rgba(255,255,255,0.5); font-size: 11px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .location-pill { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 20px; cursor: pointer; }
+  .poc-badge { background: var(--orange-bg); border: 1px solid var(--orange); color: var(--orange); font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; }
+
+  /* LAYOUT */
+  .app-body { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 56px); }
+
+  /* SIDEBAR */
+  .sidebar { width: 260px; background: var(--card-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .sidebar-section { padding: 16px; border-bottom: 1px solid var(--border); }
+  .sidebar-label { font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; }
+  .quick-btn { width: 100%; text-align: left; padding: 8px 10px; border-radius: 6px; border: none; background: transparent; cursor: pointer; font-family: var(--font); font-size: 12px; color: var(--text-primary); line-height: 1.4; transition: background var(--transition); display: flex; align-items: flex-start; gap: 8px; }
+  .quick-btn:hover { background: var(--page-bg); }
+  .quick-btn.active { background: var(--teal-bg); color: var(--navy); border-left: 3px solid var(--teal); padding-left: 7px; }
+  .quick-btn .qb-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); margin-top: 5px; flex-shrink: 0; }
+  .tool-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--page-bg); border: 1px solid var(--border); font-size: 10px; color: var(--text-secondary); padding: 3px 7px; border-radius: 4px; margin: 2px; font-family: monospace; }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* MESSAGES */
+  .messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .welcome { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); }
+  .welcome-title { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+  .welcome-sub { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+  .welcome-tools { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 4px; }
+
+  .msg-row { display: flex; gap: 12px; align-items: flex-start; }
+  .msg-row.user { flex-direction: row-reverse; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .avatar.ai { background: var(--navy); color: var(--teal); }
+  .avatar.user { background: var(--deep-blue); color: #fff; }
+  .bubble { max-width: 75%; }
+  .msg-row.user .bubble { align-items: flex-end; display: flex; flex-direction: column; }
+  .bubble-content { padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6; }
+  .msg-row.ai .bubble-content { background: var(--card-bg); border: 1px solid var(--border); border-radius: 4px 12px 12px 12px; box-shadow: var(--shadow); color: var(--text-primary); }
+  .msg-row.user .bubble-content { background: var(--navy); color: #fff; border-radius: 12px 4px 12px 12px; }
+  .tool-call-badge { display: inline-flex; align-items: center; gap: 5px; background: var(--teal-bg); border: 1px solid var(--teal-border); color: var(--teal); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 4px; margin-bottom: 6px; font-family: monospace; }
+  .tool-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--teal); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* DATA CARDS */
+  .data-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-top: 10px; box-shadow: var(--shadow); }
+  .data-card-title { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 10px; }
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .stat { background: var(--page-bg); border-radius: 6px; padding: 8px 10px; text-align: center; }
+  .stat-n { font-size: 20px; font-weight: 700; color: var(--navy); }
+  .stat-n.red { color: var(--red); }
+  .stat-n.teal { color: var(--teal); }
+  .stat-n.orange { color: var(--orange); }
+  .stat-l { font-size: 10px; color: var(--text-secondary); margin-top: 1px; font-weight: 500; }
+  .person-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .person-row:last-child { border-bottom: none; }
+  .person-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .person-info { flex: 1; }
+  .person-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+  .person-role { font-size: 11px; color: var(--text-secondary); }
+  .status-pill { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; }
+  .pill-in    { background: var(--green-bg);  color: var(--teal); border: 1px solid var(--teal-border); }
+  .pill-break { background: var(--orange-bg); color: var(--orange); border: 1px solid rgba(250,165,26,0.3); }
+  .pill-out   { background: var(--page-bg);   color: var(--text-secondary); border: 1px solid var(--border); }
+  .pill-late  { background: var(--red-bg);    color: var(--red); border: 1px solid rgba(216,22,50,0.2); }
+  .shift-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .shift-row:last-child { border-bottom: none; }
+  .urgency-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .urgency-high { background: var(--red); }
+  .urgency-medium { background: var(--orange); }
+  .urgency-low { background: var(--teal); }
+  .role-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .role-label { font-size: 11px; color: var(--text-secondary); width: 110px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 5px; background: var(--page-bg); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; }
+  .bar-ok { background: var(--teal); }
+  .bar-warn { background: var(--red); }
+  .bar-count { font-size: 10px; color: var(--text-secondary); width: 32px; text-align: right; }
+  .session-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .session-row:last-child { border-bottom: none; }
+  .session-pct { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+  .pct-ok   { background: var(--green-bg); color: var(--teal); }
+  .pct-warn { background: var(--orange-bg); color: var(--orange); }
+
+  /* INPUT */
+  .input-area { padding: 14px 24px; border-top: 1px solid var(--border); background: var(--card-bg); }
+  .input-wrap { display: flex; gap: 8px; align-items: flex-end; }
+  .input-wrap input { flex: 1; font-family: var(--font); font-size: 13px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: var(--page-bg); color: var(--text-primary); transition: border-color var(--transition); }
+  .input-wrap input:focus { border-color: var(--teal); background: #fff; }
+  .send-btn { background: var(--navy); color: #fff; border: none; border-radius: 8px; padding: 10px 18px; font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: background var(--transition), transform var(--transition); white-space: nowrap; }
+  .send-btn:hover { background: var(--deep-blue); }
+  .send-btn:active { transform: scale(0.97); }
+  .input-hint { font-size: 11px; color: var(--text-secondary); margin-top: 6px; }
+
+  /* THINKING */
+  .thinking { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 4px 12px 12px 12px; box-shadow: var(--shadow); font-size: 12px; color: var(--text-secondary); }
+  .thinking-dots span { animation: blink 1.2s infinite; }
+  .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0} 40%{opacity:1} }
+
+  .error-msg { color: var(--red); font-size: 12px; padding: 8px 12px; background: var(--red-bg); border-radius: 6px; border: 1px solid rgba(216,22,50,0.2); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">F</div>
+    <div>
+      <div class="topbar-title">Fourth Manager Intelligence</div>
+      <div class="topbar-subtitle">Proof of Concept — April 2026</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="location-pill">london-01 ↓</div>
+    <div class="poc-badge">POC</div>
+  </div>
+</div>
+
+<div class="app-body">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Quick questions</div>
+      <button class="quick-btn" onclick="ask(this.dataset.q)" data-q="Who hasn't arrived at london-01 today?">
+        <div class="qb-dot"></div>Who hasn't arrived today?
+      </button>
+      <button class="quick-btn" onclick="ask(this.dataset.q)" data-q="What open shifts do I have at london-01 this week?">
+        <div class="qb-dot"></div>What open shifts this week?
+      </button>
+      <button class="quick-btn" onclick="ask(this.dataset.q)" data-q="What's in my approval inbox at london-01?">
+        <div class="qb-dot"></div>What's in my inbox?
+      </button>
+      <button class="quick-btn" onclick="ask(this.dataset.q)" data-q="What did labour cost at london-01 today?">
+        <div class="qb-dot"></div>What did labour cost today?
+      </button>
+      <button class="quick-btn" onclick="ask(this.dataset.q)" data-q="Show me the rota for london-01 this week">
+        <div class="qb-dot"></div>Show me this week's rota
+      </button>
+      <button class="quick-btn" onclick="ask(this.dataset.q)" data-q="Is the morning shift covered at london-01?">
+        <div class="qb-dot"></div>Is the morning shift covered?
+      </button>
+      <button class="quick-btn" onclick="ask(this.dataset.q)" data-q="Are any devices offline at london-01?">
+        <div class="qb-dot"></div>Are any devices offline?
+      </button>
+      <button class="quick-btn" onclick="ask(this.dataset.q)" data-q="What is the bulletin at london-01?">
+        <div class="qb-dot"></div>What's today's bulletin?
+      </button>
+      <button class="quick-btn" onclick="ask(this.dataset.q)" data-q="Who has lieu time owed at london-01?">
+        <div class="qb-dot"></div>Who has lieu time owed?
+      </button>
+      <button class="quick-btn" onclick="ask(this.dataset.q)" data-q="What are my manager permissions?">
+        <div class="qb-dot"></div>What are my permissions?
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Connected tools (30)</div>
+      <div>
+        <span class="tool-chip">get_attendance_live</span>
+        <span class="tool-chip">get_open_shifts</span>
+        <span class="tool-chip">get_pending_requests</span>
+        <span class="tool-chip">get_labour_costs</span>
+        <span class="tool-chip">get_shift_coverage</span>
+        <span class="tool-chip">get_team_schedule</span>
+        <span class="tool-chip">get_bulletin</span>
+        <span class="tool-chip">get_devices</span>
+        <span class="tool-chip">get_employees</span>
+        <span class="tool-chip">+21 more</span>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Data source</div>
+      <div style="font-size:11px; color:var(--orange); font-weight:500; display:flex; align-items:center; gap:5px;">
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--orange);"></div>
+        Mock mode — awaiting API token
+      </div>
+      <div style="font-size:11px; color:var(--text-secondary); margin-top:4px; line-height:1.5;">
+        Built on Mark's API docs.<br>Flip to live: add token + base URLs.
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="messages" id="messages">
+      <div class="welcome">
+        <div class="welcome-title">Fourth Manager Intelligence — POC</div>
+        <div class="welcome-sub">Ask me anything about staffing, attendance, costs, or scheduling at london-01. I'll call the right tool and show you the data. Click a question on the left or type your own below.</div>
+        <div class="welcome-tools">
+          <span class="tool-chip">Labour Productivity API</span>
+          <span class="tool-chip">My Schedule API</span>
+          <span class="tool-chip">eClock API</span>
+          <span class="tool-chip">30 tools</span>
+          <span class="tool-chip">Mock data</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrap">
+        <input type="text" id="userInput" placeholder="Ask about staffing, costs, attendance, shifts..." onkeydown="if(event.key==='Enter')sendMsg()" />
+        <button class="send-btn" onclick="sendMsg()">Send</button>
+      </div>
+      <div class="input-hint">Powered by Fourth Manager MCP tools · Mock data mode · Built by Nicola Evans, VP Product</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const LOCATION = "london-01";
+
+// ── MOCK DATA (mirrors index.js) ──────────────────────────────
+const MOCK = {
+  attendance: {
+    summary: { clocked_in: 9, on_break: 2, clocked_out: 1, expected: 14, not_arrived: 2 },
+    employees: [
+      { name: "Sarah Mitchell",  status: "clocked_in",  time: "07:02", role: "Chef de Partie" },
+      { name: "James Okafor",    status: "on_break",    time: "08:00", role: "Bartender" },
+      { name: "Priya Sharma",    status: "clocked_in",  time: "09:00", role: "Supervisor" },
+      { name: "Tom Walsh",       status: "not_arrived", time: "09:00", role: "Kitchen Porter", mins_late: 45 },
+      { name: "Lucy Chen",       status: "clocked_in",  time: "07:00", role: "Chef de Partie" },
+      { name: "Marcus Brown",    status: "clocked_out", time: "11:00", role: "Morning Supervisor" },
+      { name: "Aisha Patel",     status: "clocked_in",  time: "07:05", role: "Chef de Partie" },
+      { name: "Ravi Desai",      status: "clocked_in",  time: "08:58", role: "Waiting Staff" },
+      { name: "Chloe Thornton",  status: "on_break",    time: "09:00", role: "Waiting Staff" },
+      { name: "Danny Kowalski",  status: "clocked_in",  time: "07:00", role: "Sous Chef" },
+      { name: "Fatima Hassan",   status: "clocked_in",  time: "09:02", role: "Waiting Staff" },
+      { name: "Oliver Reed",     status: "not_arrived", time: "09:30", role: "Bartender", mins_late: 15 },
+      { name: "Yuki Tanaka",     status: "clocked_in",  time: "07:00", role: "Kitchen Porter" },
+      { name: "Beth Cartwright", status: "clocked_in",  time: "08:00", role: "Supervisor" },
+    ]
+  },
+  open_shifts: [
+    { role: "Chef de Partie", dept: "Kitchen", date: "Today",    time: "07:00–15:00", urgency: "high" },
+    { role: "Bartender",      dept: "Bar",     date: "Today",    time: "17:00–23:00", urgency: "medium" },
+    { role: "Supervisor",     dept: "FOH",     date: "Tomorrow", time: "11:00–19:00", urgency: "high" },
+    { role: "Kitchen Porter", dept: "Kitchen", date: "Tomorrow", time: "15:00–23:00", urgency: "low" },
+  ],
+  inbox: [
+    { type: "Swap",          employee: "Sarah Mitchell", detail: "14 Apr 9am–5pm ↔ 15 Apr",      days: 1 },
+    { type: "Drop",          employee: "James Okafor",   detail: "14 Apr 5pm–11pm — family",      days: 2 },
+    { type: "Give",          employee: "Priya Sharma",   detail: "16 Apr 8am–4pm — volunteered",  days: 0 },
+    { type: "Unavailability",employee: "Tom Walsh",      detail: "18–20 Apr — holiday",            days: 3 },
+  ],
+  labour_costs: {
+    sessions: [
+      { name: "Breakfast", cost: 312.50, pct: 18.2 },
+      { name: "Lunch",     cost: 640.00, pct: 22.1 },
+      { name: "Dinner",    cost: 890.00, pct: 19.8 },
+    ],
+    total: 1842.50, pct: 20.0
+  },
+  shift_coverage: {
+    morning:   { label: "Morning 7am–3pm",   required: 8,  scheduled: 6,  roles: { Kitchen: [3,2], "Front of House": [4,4], Supervisor: [1,0] } },
+    afternoon: { label: "Afternoon 3pm–11pm", required: 10, scheduled: 11, roles: { Kitchen: [4,5], "Front of House": [5,5], Supervisor: [1,1] } },
+    night:     { label: "Night 11pm–7am",     required: 5,  scheduled: 5,  roles: { Kitchen: [2,2], "Front of House": [2,2], Supervisor: [1,1] } },
+  },
+  rota: [
+    { name: "Sarah Mitchell",  role: "Chef de Partie", mon: "07–15", tue: "07–15", wed: "OFF", thu: "07–15", fri: "07–15", sat: "OFF", sun: "OFF" },
+    { name: "James Okafor",    role: "Bartender",      mon: "OFF",   tue: "12–23", wed: "12–23", thu: "OFF", fri: "17–23", sat: "17–23", sun: "OFF" },
+    { name: "Priya Sharma",    role: "Supervisor",     mon: "09–17", tue: "OFF",   wed: "09–17", thu: "OFF", fri: "09–17", sat: "OFF",   sun: "OFF" },
+    { name: "Danny Kowalski",  role: "Sous Chef",      mon: "07–15", tue: "07–15", wed: "07–15", thu: "OFF", fri: "07–15", sat: "07–15", sun: "OFF" },
+    { name: "Aisha Patel",     role: "Chef de Partie", mon: "OFF",   tue: "07–15", wed: "OFF",   thu: "07–15", fri: "07–15", sat: "07–15", sun: "OFF" },
+  ],
+  devices: [
+    { name: "Kiosk — Main Entrance", status: "online" },
+    { name: "Kiosk — Kitchen",       status: "online" },
+    { name: "Kiosk — Bar",           status: "offline" },
+  ],
+  bulletin: { title: "Bank Holiday staffing reminder", body: "All staff scheduled for Mon 7th April must confirm availability by Friday.", read: 8, total: 14 },
+  lieu: [
+    { name: "Sarah Mitchell", owed: 4.5, taken: 0,   balance: 4.5 },
+    { name: "Priya Sharma",   owed: 8.0, taken: 4.0, balance: 4.0 },
+    { name: "Lucy Chen",      owed: 2.0, taken: 2.0, balance: 0   },
+  ],
+  rights: { locations: ["london-01","london-02","manchester-01"], permissions: ["ManageEclockLocation","ManageEclockApp","ManageEclockAppDailyBulletin"] }
+};
+
+// ── AVATAR COLOURS ──────────────────────────────────────────
+const AVATAR_COLOURS = ["#002747","#0C4A7D","#00B69F","#FAA51A","#9678B6","#6FB4E3"];
+function avatarColor(name) { let h = 0; for(let c of name) h = (h*31+c.charCodeAt(0))%AVATAR_COLOURS.length; return AVATAR_COLOURS[h]; }
+function initials(name) { return name.split(" ").map(p=>p[0]).join("").slice(0,2); }
+
+// ── TOOL ROUTING ──────────────────────────────────────────────
+function routeQuestion(q) {
+  const t = q.toLowerCase();
+  if (/arrived|clocked.?in|who.*in|who.*here|late|on break|not show|live attendance|attendance now|missing/.test(t)) return "attendance";
+  if (/open shift|unfilled|needs? fill|coverage gap|shifts? this week|uncovered/.test(t)) return "open_shifts";
+  if (/inbox|pending|approval|swap|drop request|requests? waiting|what needs approv/.test(t)) return "inbox";
+  if (/labour cost|wage cost|cost today|labour spend|wage percentage|cost per session|how much did/.test(t)) return "labour_costs";
+  if (/rota|team schedule|weekly schedule|who.*working|schedule.*week|show.*schedule/.test(t)) return "rota";
+  if (/shift covered|staffed|understaffed|overstaffed|morning shift|afternoon shift|night shift|shift coverage/.test(t)) return "shift_coverage";
+  if (/device|kiosk|terminal|offline|clocking machine/.test(t)) return "devices";
+  if (/bulletin|message of the day|announcement|notice|daily message/.test(t)) return "bulletin";
+  if (/lieu|toil|time off in lieu|lieu balance|lieu hours/.test(t)) return "lieu";
+  if (/permission|rights|access|which location.*manage|what.*allow/.test(t)) return "rights";
+  return null;
+}
+
+// ── RENDER DATA CARDS ─────────────────────────────────────────
+function renderData(tool, question) {
+  const q = question.toLowerCase();
+  switch(tool) {
+    case "attendance": return renderAttendance();
+    case "open_shifts": return renderOpenShifts();
+    case "inbox": return renderInbox();
+    case "labour_costs": return renderLabourCosts();
+    case "rota": return renderRota();
+    case "shift_coverage": return renderShiftCoverage(q);
+    case "devices": return renderDevices();
+    case "bulletin": return renderBulletin();
+    case "lieu": return renderLieu();
+    case "rights": return renderRights();
+    default: return "";
+  }
+}
+
+function renderAttendance() {
+  const s = MOCK.attendance.summary;
+  const notArrived = MOCK.attendance.employees.filter(e=>e.status==="not_arrived");
+  let rows = notArrived.map(e=>`
+    <div class="person-row">
+      <div class="person-avatar" style="background:${avatarColor(e.name)}">${initials(e.name)}</div>
+      <div class="person-info"><div class="person-name">${e.name}</div><div class="person-role">${e.role} — expected ${e.time}</div></div>
+      <span class="status-pill pill-late">${e.mins_late}m late</span>
+    </div>`).join("");
+  return `<div class="data-card">
+    <div class="data-card-title">Live attendance — ${LOCATION}</div>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-n teal">${s.clocked_in}</div><div class="stat-l">Clocked in</div></div>
+      <div class="stat"><div class="stat-n orange">${s.on_break}</div><div class="stat-l">On break</div></div>
+      <div class="stat"><div class="stat-n red">${s.not_arrived}</div><div class="stat-l">Not arrived</div></div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function renderOpenShifts() {
+  let rows = MOCK.open_shifts.map(s=>`
+    <div class="shift-row">
+      <div class="urgency-dot urgency-${s.urgency}"></div>
+      <div style="flex:1"><strong style="font-size:12px">${s.role}</strong> <span style="color:var(--text-secondary);font-size:11px">· ${s.dept}</span></div>
+      <div style="font-size:11px;color:var(--text-secondary)">${s.date}</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-left:8px">${s.time}</div>
+    </div>`).join("");
+  const urgent = MOCK.open_shifts.filter(s=>s.urgency==="high").length;
+  return `<div class="data-card">
+    <div class="data-card-title">Open shifts — ${LOCATION}</div>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-n">${MOCK.open_shifts.length}</div><div class="stat-l">Total open</div></div>
+      <div class="stat"><div class="stat-n red">${urgent}</div><div class="stat-l">Urgent</div></div>
+      <div class="stat"><div class="stat-n orange">${MOCK.open_shifts.length-urgent}</div><div class="stat-l">Other</div></div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function renderInbox() {
+  const overdue = MOCK.inbox.filter(r=>r.days>=2).length;
+  let rows = MOCK.inbox.map(r=>`
+    <div class="shift-row">
+      <div class="person-avatar" style="background:${avatarColor(r.employee)};width:24px;height:24px;font-size:9px">${initials(r.employee)}</div>
+      <div style="flex:1"><strong style="font-size:12px">${r.employee}</strong> <span style="color:var(--text-secondary);font-size:11px">· ${r.type}</span><br><span style="font-size:11px;color:var(--text-secondary)">${r.detail}</span></div>
+      <span class="status-pill ${r.days>=2?'pill-late':r.days===0?'pill-in':'pill-break'}">${r.days===0?"New":r.days+"d"}</span>
+    </div>`).join("");
+  return `<div class="data-card">
+    <div class="data-card-title">Approval inbox — ${LOCATION}</div>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-n">${MOCK.inbox.length}</div><div class="stat-l">Pending</div></div>
+      <div class="stat"><div class="stat-n red">${overdue}</div><div class="stat-l">Overdue</div></div>
+      <div class="stat"><div class="stat-n teal">${MOCK.inbox.length-overdue}</div><div class="stat-l">On time</div></div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function renderLabourCosts() {
+  let rows = MOCK.labour_costs.sessions.map(s=>`
+    <div class="session-row">
+      <div style="font-size:12px;font-weight:500">${s.name}</div>
+      <div style="font-size:12px;color:var(--text-secondary)">£${s.cost.toFixed(2)}</div>
+      <span class="session-pct ${s.pct>21?'pct-warn':'pct-ok'}">${s.pct}%</span>
+    </div>`).join("");
+  return `<div class="data-card">
+    <div class="data-card-title">Labour costs — ${LOCATION} today</div>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-n">£${MOCK.labour_costs.total.toLocaleString()}</div><div class="stat-l">Total labour</div></div>
+      <div class="stat"><div class="stat-n orange">${MOCK.labour_costs.pct}%</div><div class="stat-l">Of revenue</div></div>
+      <div class="stat"><div class="stat-n">${MOCK.labour_costs.sessions.length}</div><div class="stat-l">Sessions</div></div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function renderRota() {
+  const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  let header = `<div style="display:grid;grid-template-columns:130px repeat(7,1fr);gap:4px;font-size:10px;font-weight:700;letter-spacing:0.05em;color:var(--text-secondary);text-transform:uppercase;margin-bottom:6px">
+    <div>Employee</div>${days.map(d=>`<div style="text-align:center">${d}</div>`).join("")}</div>`;
+  let rows = MOCK.rota.map(e=>`
+    <div style="display:grid;grid-template-columns:130px repeat(7,1fr);gap:4px;padding:5px 0;border-bottom:1px solid var(--border);align-items:center;font-size:11px">
+      <div style="font-weight:500;color:var(--text-primary)">${e.name.split(" ")[0]}<br><span style="font-size:10px;color:var(--text-secondary);font-weight:400">${e.role}</span></div>
+      ${["mon","tue","wed","thu","fri","sat","sun"].map(d=>`<div style="text-align:center;${e[d]==="OFF"?"color:var(--text-secondary)":""}">${e[d]}</div>`).join("")}
+    </div>`).join("");
+  return `<div class="data-card">
+    <div class="data-card-title">Weekly rota — ${LOCATION}</div>
+    ${header}${rows}
+  </div>`;
+}
+
+function renderShiftCoverage(q) {
+  const shift = /afternoon/.test(q) ? "afternoon" : /night/.test(q) ? "night" : "morning";
+  const d = MOCK.shift_coverage[shift];
+  const gap = d.required - d.scheduled;
+  const status = gap > 0 ? "Understaffed" : gap < 0 ? "Overstaffed" : "Fully covered";
+  const statusColor = gap > 0 ? "var(--red)" : gap < 0 ? "var(--orange)" : "var(--teal)";
+  let roleRows = Object.entries(d.roles).map(([role,[req,sch]])=>{
+    const pct = Math.min(100,Math.round((sch/req)*100));
+    return `<div class="role-bar">
+      <div class="role-label">${role}</div>
+      <div class="bar-track"><div class="bar-fill ${sch>=req?"bar-ok":"bar-warn"}" style="width:${pct}%"></div></div>
+      <div class="bar-count">${sch}/${req}</div>
+    </div>`;}).join("");
+  return `<div class="data-card">
+    <div class="data-card-title">Shift coverage — ${d.label}</div>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-n">${d.required}</div><div class="stat-l">Required</div></div>
+      <div class="stat"><div class="stat-n">${d.scheduled}</div><div class="stat-l">Scheduled</div></div>
+      <div class="stat"><div class="stat-n" style="color:${statusColor}">${status}</div><div class="stat-l">Status</div></div>
+    </div>
+    ${roleRows}
+  </div>`;
+}
+
+function renderDevices() {
+  const offline = MOCK.devices.filter(d=>d.status==="offline");
+  let rows = MOCK.devices.map(d=>`
+    <div class="shift-row">
+      <div style="width:8px;height:8px;border-radius:50%;background:${d.status==="online"?"var(--teal)":"var(--red)"};flex-shrink:0"></div>
+      <div style="flex:1;font-size:12px">${d.name}</div>
+      <span class="status-pill ${d.status==="online"?"pill-in":"pill-late"}">${d.status}</span>
+    </div>`).join("");
+  return `<div class="data-card">
+    <div class="data-card-title">Devices — ${LOCATION}</div>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-n">${MOCK.devices.length}</div><div class="stat-l">Total</div></div>
+      <div class="stat"><div class="stat-n teal">${MOCK.devices.length-offline.length}</div><div class="stat-l">Online</div></div>
+      <div class="stat"><div class="stat-n red">${offline.length}</div><div class="stat-l">Offline</div></div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function renderBulletin() {
+  const b = MOCK.bulletin;
+  const pct = Math.round((b.read/b.total)*100);
+  return `<div class="data-card">
+    <div class="data-card-title">Active bulletin — ${LOCATION}</div>
+    <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">${b.title}</div>
+    <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">${b.body}</div>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-n teal">${b.read}</div><div class="stat-l">Read</div></div>
+      <div class="stat"><div class="stat-n orange">${b.total-b.read}</div><div class="stat-l">Unread</div></div>
+      <div class="stat"><div class="stat-n">${pct}%</div><div class="stat-l">Read rate</div></div>
+    </div>
+  </div>`;
+}
+
+function renderLieu() {
+  const outstanding = MOCK.lieu.filter(e=>e.balance>0);
+  let rows = MOCK.lieu.map(e=>`
+    <div class="shift-row">
+      <div class="person-avatar" style="background:${avatarColor(e.name)};width:24px;height:24px;font-size:9px">${initials(e.name)}</div>
+      <div style="flex:1;font-size:12px;font-weight:500">${e.name}</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-right:8px">Owed ${e.owed}h · Taken ${e.taken}h</div>
+      <span class="status-pill ${e.balance>0?"pill-late":"pill-in"}">${e.balance>0?e.balance+"h due":"Clear"}</span>
+    </div>`).join("");
+  return `<div class="data-card">
+    <div class="data-card-title">Lieu balances — ${LOCATION}</div>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-n orange">${outstanding.length}</div><div class="stat-l">With balance</div></div>
+      <div class="stat"><div class="stat-n">${MOCK.lieu.reduce((s,e)=>s+e.owed,0).toFixed(1)}h</div><div class="stat-l">Total owed</div></div>
+      <div class="stat"><div class="stat-n teal">${MOCK.lieu.filter(e=>e.balance===0).length}</div><div class="stat-l">Cleared</div></div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function renderRights() {
+  return `<div class="data-card">
+    <div class="data-card-title">Manager permissions</div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Locations you manage:</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      ${MOCK.rights.locations.map(l=>`<span class="status-pill pill-in">${l}</span>`).join("")}
+    </div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Permissions:</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      ${MOCK.rights.permissions.map(p=>`<div style="font-size:11px;font-family:monospace;background:var(--page-bg);padding:4px 8px;border-radius:4px;color:var(--navy)">${p}</div>`).join("")}
+    </div>
+  </div>`;
+}
+
+// ── AI RESPONSE GENERATION ────────────────────────────────────
+function generateResponse(question, tool) {
+  const q = question.toLowerCase();
+  const responses = {
+    attendance: () => {
+      const na = MOCK.attendance.employees.filter(e=>e.status==="not_arrived");
+      return `Based on live attendance at ${LOCATION}, <strong>${na.length} employees haven't arrived</strong>: ${na.map(e=>`<strong>${e.name}</strong> (${e.role}, ${e.mins_late} mins late)`).join(" and ")}. ${MOCK.attendance.summary.clocked_in} are clocked in and ${MOCK.attendance.summary.on_break} are on break out of ${MOCK.attendance.summary.expected} expected today.`;
+    },
+    open_shifts: () => {
+      const urgent = MOCK.open_shifts.filter(s=>s.urgency==="high");
+      return `There are <strong>${MOCK.open_shifts.length} open shifts</strong> at ${LOCATION} this week. <strong>${urgent.length} are urgent</strong> — ${urgent.map(s=>`${s.role} (${s.dept}, ${s.date})`).join(" and ")}. You have candidates available for all of them.`;
+    },
+    inbox: () => {
+      const overdue = MOCK.inbox.filter(r=>r.days>=2);
+      return `You have <strong>${MOCK.inbox.length} requests</strong> waiting for approval at ${LOCATION}. <strong>${overdue.length} are overdue</strong> (2+ days): ${overdue.map(r=>`${r.employee}'s ${r.type.toLowerCase()}`).join(" and ")}. I'd recommend actioning those first.`;
+    },
+    labour_costs: () => {
+      const top = MOCK.labour_costs.sessions.reduce((a,b)=>a.cost>b.cost?a:b);
+      return `Total labour cost at ${LOCATION} today is <strong>£${MOCK.labour_costs.total.toLocaleString()}</strong>, representing <strong>${MOCK.labour_costs.pct}% of revenue</strong>. The highest cost session was <strong>${top.name} at £${top.cost.toFixed(2)}</strong> (${top.pct}% of revenue). Lunch is slightly above target at 22.1%.`;
+    },
+    rota: () => `Here's the team schedule for ${LOCATION} this week. ${MOCK.rota.length} employees are rostered. Gaps on certain days may link to the open shifts that need filling.`,
+    shift_coverage: () => {
+      const shift = /afternoon/.test(q) ? "afternoon" : /night/.test(q) ? "night" : "morning";
+      const d = MOCK.shift_coverage[shift];
+      const gap = d.required - d.scheduled;
+      if (gap > 0) return `The ${shift} shift at ${LOCATION} is <strong>understaffed</strong> — ${d.scheduled} scheduled against ${d.required} required, a gap of <strong>${gap} people</strong>. The roles with gaps are shown below.`;
+      if (gap < 0) return `The ${shift} shift at ${LOCATION} is <strong>slightly overstaffed</strong> — ${d.scheduled} scheduled against ${d.required} required. You have ${Math.abs(gap)} extra.`;
+      return `The ${shift} shift at ${LOCATION} is <strong>fully covered</strong> — all ${d.required} required roles are filled.`;
+    },
+    devices: () => {
+      const offline = MOCK.devices.filter(d=>d.status==="offline");
+      return offline.length > 0
+        ? `<strong>${offline.length} device${offline.length>1?"s are":" is"} offline</strong> at ${LOCATION}: <strong>${offline.map(d=>d.name).join(", ")}</strong>. This may affect clocking for staff in that area. The other ${MOCK.devices.length-offline.length} devices are online.`
+        : `All ${MOCK.devices.length} devices at ${LOCATION} are online.`;
+    },
+    bulletin: () => {
+      const b = MOCK.bulletin;
+      const unread = b.total - b.read;
+      return `The active bulletin is <strong>"${b.title}"</strong>. So far <strong>${b.read} of ${b.total} staff</strong> have read it — ${unread} still haven't. You may want to follow up with those who haven't seen it yet.`;
+    },
+    lieu: () => {
+      const outstanding = MOCK.lieu.filter(e=>e.balance>0);
+      return `<strong>${outstanding.length} employees</strong> have outstanding lieu balances at ${LOCATION}: ${outstanding.map(e=>`<strong>${e.name.split(" ")[0]}</strong> (${e.balance}h)`).join(", ")}. Total owed across the team is <strong>${MOCK.lieu.reduce((s,e)=>s+e.owed,0).toFixed(1)} hours</strong>.`;
+    },
+    rights: () => `You have manager access to <strong>${MOCK.rights.locations.length} locations</strong>: ${MOCK.rights.locations.join(", ")}. You hold <strong>${MOCK.rights.permissions.length} permissions</strong> including bulletin management and full eClock administration.`,
+  };
+  return responses[tool] ? responses[tool]() : "I found some data for that. Here's what the tool returned:";
+}
+
+// ── MESSAGE HANDLING ──────────────────────────────────────────
+function addMessage(role, html, toolName, dataHtml) {
+  const msgs = document.getElementById("messages");
+  const row = document.createElement("div");
+  row.className = `msg-row ${role}`;
+  const av = `<div class="avatar ${role}">${role==="ai"?"iQ":"NE"}</div>`;
+  let bubbleInner = "";
+  if (role === "ai" && toolName) {
+    bubbleInner += `<div><span class="tool-call-badge"><span class="tool-dot"></span>${toolName}</span></div>`;
+  }
+  bubbleInner += `<div class="bubble-content">${html}</div>`;
+  if (dataHtml) bubbleInner += dataHtml;
+  row.innerHTML = role === "user"
+    ? `<div class="bubble">${av}<div class="bubble-content">${html}</div></div>`
+    : `${av}<div class="bubble">${bubbleInner}</div>`;
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addThinking() {
+  const msgs = document.getElementById("messages");
+  const row = document.createElement("div");
+  row.className = "msg-row ai";
+  row.id = "thinking";
+  row.innerHTML = `<div class="avatar ai">iQ</div><div class="bubble"><div class="thinking"><span style="font-size:11px;color:var(--text-secondary)">Calling tools</span><div class="thinking-dots"><span>.</span><span>.</span><span>.</span></div></div></div>`;
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeThinking() {
+  const t = document.getElementById("thinking");
+  if (t) t.remove();
+}
+
+function sendMsg() {
+  const input = document.getElementById("userInput");
+  const text = input.value.trim();
+  if (!text) return;
+  ask(text);
+  input.value = "";
+}
+
+function ask(question) {
+  // highlight active quick btn
+  document.querySelectorAll(".quick-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.q === question);
+  });
+
+  addMessage("user", question);
+  addThinking();
+
+  setTimeout(() => {
+    removeThinking();
+    const tool = routeQuestion(question);
+    if (tool) {
+      const response = generateResponse(question, tool);
+      const dataHtml = renderData(tool, question);
+      const toolNames = {
+        attendance: "get_attendance_live", open_shifts: "get_open_shifts",
+        inbox: "get_pending_requests", labour_costs: "get_labour_costs",
+        rota: "get_team_schedule", shift_coverage: "get_shift_coverage",
+        devices: "get_devices", bulletin: "get_bulletin",
+        lieu: "get_lieu_balances", rights: "get_manager_rights"
+      };
+      addMessage("ai", response, toolNames[tool], dataHtml);
+    } else {
+      addMessage("ai",
+        `I don't have a specific tool for that exact question yet — but I have 30 tools covering attendance, scheduling, costs, and operations. Try one of the quick questions on the left, or rephrase using terms like "shift coverage", "open shifts", "approval inbox", or "labour cost".`,
+        null, null
+      );
+    }
+  }, 900);
+}
+</script>
+</body>
+</html>
